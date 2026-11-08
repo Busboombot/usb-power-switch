@@ -136,6 +136,13 @@ standing, the wires coming up into J1, and the cable clamp.
   the carrier up. They stand 2.5 mm above the split, which locates the
   lid. The middle of the back is left open for the cable's wires. Two
   posts in the lid press down on the carrier's back corners.
+- **Back stops (cable version).** Behind the carrier there is a 3 mm gap
+  where the wires turn up into J1. Two posts at the back corners close it
+  off: they rise from the floor to 1 mm above the top of the carrier, 0.2 mm
+  behind its back edge, so the board can't slide back. They sit at
+  |y| ≥ 6 mm, clear of the wires and the clamp screws. The front wall and
+  the USB-C in its slot stop the board moving forward. The Molex version's
+  back wall is only 0.3 mm behind the board, so it needs no stops.
 - **USB opening:** 9.4 × 3.8 mm, rounded to match the receptacle, with a
   12 × 6.6 mm recess 0.5 mm deep around it. The receptacle face ends up
   0.55 mm behind the case surface, so the plug seats fully.

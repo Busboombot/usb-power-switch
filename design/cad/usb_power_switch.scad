@@ -167,6 +167,11 @@ out_w = in_w + 2 * wall;
 
 rail_in = car_w / 2 - 0.9;     // rails support the carrier's outer 0.9 mm
 rail_gap = 0.15;               // rails to lid wall
+// Cable version: stops behind the carrier's back corners keep it from
+// sliding back into the gap where the wires turn up into J1.
+stop_gap = 0.2;                // carrier back edge to stop face
+stop_t = 1.5;                  // stop thickness along x
+stop_above = 1.0;              // stop top above the carrier's top face
 
 // ===================== Colors =====================
 c_pcb_mod = "#1f56b5";
@@ -437,6 +442,9 @@ module case_bottom() {
       // back corner supports (middle left open for the cable's wires)
       for (s = [-1, 1]) scale([1, s, 1])
         box(car_l - 1.2, car_l + clr - rail_gap, 6.0, in_w / 2 - rail_gap, z_floor - eps, 0);
+      // cable version: stops behind the back corners (the carrier can't slide back)
+      if (variant == "cable") for (s = [-1, 1]) scale([1, s, 1])
+        box(car_l + stop_gap, car_l + stop_gap + stop_t, 6.0, in_w / 2 - rail_gap, z_floor - eps, pcb_t + stop_above);
       // fill the gap between the rails and the walls below the split
       for (s = [-1, 1]) scale([1, s, 1])
         box(in_x0, car_l, rail_in, in_w / 2 + eps, z_floor - eps, z_split);
