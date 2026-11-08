@@ -3,3 +3,7 @@
 __pycache__/
 design/cad/stl/
 design/scan/out/
+design/viewer/stl/
+design/cad/gcode/
+result.json
+_site/

@@ -1,0 +1,10 @@
+# GitHub Pages (Jekyll). README.md becomes the home page, and links to the
+# .md files in design/ become links to their rendered pages.
+title: USB laser switch
+description: A Waveshare RP2040-Zero that switches a 5 V line laser on and off over USB serial, with a carrier board and a 3D-printed case.
+theme: jekyll-theme-primer
+exclude:
+  - justfile
+  - design/viewer/stl
+  - design/cad/stl
+  - design/cad/gcode

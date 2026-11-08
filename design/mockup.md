@@ -10,6 +10,10 @@ case in two versions.
 - `just render` writes preview images to `cad/renders/`.
 - `just stl` writes printable STLs to `cad/stl/`. The lids are already
   flipped upside down for printing.
+- `just viewer` builds interactive 3D views, where each part can be turned
+  on, ghosted or hidden:
+  [cable version](https://busboombot.github.io/usb-power-switch/viewer/cable.html),
+  [Molex version](https://busboombot.github.io/usb-power-switch/viewer/molex.html).
 
 | | Molex version | Cable version |
 |---|---|---|

@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>/*TITLE*/</title>
+<!-- Built by design/viewer/build.sh (just viewer). Do not edit the copies in viewer/. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600&family=Barlow:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a CAD workbench. Parts panel on the left (bottom sheet on phones), the 3D stage fills the rest. */
+:root {
+  --bg: #f3f4f2;
+  --panel: #fbfbfa;
+  --ink: #1d2226;
+  --muted: #646d73;
+  --line: #d9dddc;
+  --chip: #eceeec;
+  --accent: #c8321f;      /* laser red */
+  --accent-ink: #ffffff;
+  --stage: #e6eaeb;
+  --grid-a: #b9c1c3;
+  --grid-b: #d3d9da;
+  --cut: #7a2a1f;
+  --f-display: "Barlow Semi Condensed", "Arial Narrow", system-ui, sans-serif;
+  --f-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181b; --panel: #1a1f23; --ink: #e4e8ea; --muted: #949ea4; --line: #2c3338; --chip: #232a2f;
+    --accent: #ff5a44; --accent-ink: #1a0a07; --stage: #0f1316; --grid-a: #3a4348; --grid-b: #252c31; --cut: #ff7a5c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14181b; --panel: #1a1f23; --ink: #e4e8ea; --muted: #949ea4; --line: #2c3338; --chip: #232a2f;
+  --accent: #ff5a44; --accent-ink: #1a0a07; --stage: #0f1316; --grid-a: #3a4348; --grid-b: #252c31; --cut: #ff7a5c;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+[hidden] { display: none !important; }
+a { color: inherit; }
+.nav { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin-bottom: 10px; }
+.nav a { color: var(--muted); text-decoration: none; }
+.nav a:hover { color: var(--ink); text-decoration: underline; }
+.nav a[aria-current="page"] { color: var(--accent); font-weight: 500; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; }
+.app { height: 100%; display: grid; grid-template-columns: 312px 1fr; min-height: 0; }
+.panel {
+  background: var(--panel); border-right: 1px solid var(--line); overflow-y: auto; min-width: 0;
+  padding-block: 18px 24px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.stage { position: relative; min-width: 0; min-height: 0; background: var(--stage); }
+#view { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+#view.picking { cursor: crosshair; }
+
+h1 { font-family: var(--f-display); font-weight: 600; font-size: 22px; line-height: 1.1; margin: 0; text-wrap: balance; letter-spacing: 0.01em; }
+.sub { color: var(--muted); margin: 4px 0 0; line-height: 1.4; }
+.dims { font-family: var(--f-mono); font-size: 12px; color: var(--muted); margin-top: 6px; font-variant-numeric: tabular-nums; }
+
+.group { display: flex; flex-direction: column; gap: 2px; }
+.ghead { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 4px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.ghead h2 { font-family: var(--f-display); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0; }
+.ghead .all { display: flex; gap: 4px; }
+.link { background: none; border: 0; padding: 2px 4px; font: 500 12px var(--f-body); color: var(--muted); cursor: pointer; border-radius: 4px; }
+.link:hover { color: var(--ink); }
+
+.row { display: grid; grid-template-columns: 12px 1fr auto; align-items: center; gap: 8px; padding: 3px 4px; border-radius: 6px; }
+.row.hot { background: var(--chip); }
+.sw { width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 1px rgba(0,0,0,.25); }
+.row .name { min-width: 0; line-height: 1.25; }
+.row .name small { display: block; color: var(--muted); font-size: 12px; }
+.row.off .name { color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button { border: 0; background: transparent; color: var(--muted); font: 500 11px var(--f-body); padding: 4px 7px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--panel); }
+.seg button:focus-visible, .btn:focus-visible, .link:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.ctl { display: grid; grid-template-columns: 76px 1fr; align-items: center; gap: 8px 10px; }
+.ctl label { color: var(--muted); font-size: 13px; }
+.ctl input[type="range"] { width: 100%; accent-color: var(--accent); }
+.ctl select { font: 13px var(--f-body); padding: 4px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); color: var(--ink); }
+.inline { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.inline input[type="range"] { flex: 1; min-width: 0; }
+.val { font-family: var(--f-mono); font-size: 12px; color: var(--muted); min-width: 52px; text-align: right; font-variant-numeric: tabular-nums; }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: 13px; color: var(--ink); }
+.check input { accent-color: var(--accent); }
+
+.btn { border: 1px solid var(--line); background: var(--panel); color: var(--ink); font: 500 12px var(--f-body); padding: 5px 9px; border-radius: 6px; cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.btn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+
+.views { position: absolute; top: 12px; right: max(12px, env(safe-area-inset-right, 0px)); display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; max-width: calc(100% - 24px); }
+.views .btn { background: color-mix(in srgb, var(--panel) 88%, transparent); backdrop-filter: blur(4px); }
+.readout {
+  position: absolute; left: 12px; bottom: 12px; max-width: min(420px, calc(100% - 24px));
+  background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(4px);
+  border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; font-size: 13px; line-height: 1.45;
+}
+.readout b { font-family: var(--f-display); font-weight: 600; font-size: 15px; }
+.readout .xyz { font-family: var(--f-mono); font-size: 12px; font-variant-numeric: tabular-nums; }
+.readout .hint { color: var(--muted); }
+.axes { font-family: var(--f-mono); font-size: 11px; color: var(--muted); line-height: 1.5; }
+.axes b { color: var(--ink); font-weight: 500; }
+
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: minmax(300px, 1fr) minmax(0, 46%); }
+  .stage { order: 1; }
+  .panel { order: 2; border-right: 0; border-top: 1px solid var(--line); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .readout { font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="panel" aria-label="Parts and view controls">
+    <header>
+      <nav class="nav" aria-label="Pages">
+        <a href="../">Project</a>
+        <a href="cable.html" id="nav-cable">Cable version</a>
+        <a href="molex.html" id="nav-molex">Molex version</a>
+      </nav>
+      <h1 id="title"></h1>
+      <p class="sub" id="sub"></p>
+      <div class="dims" id="dims"></div>
+    </header>
+
+    <div id="groups"></div>
+
+    <div class="group">
+      <div class="ghead"><h2>View</h2><span class="all"><button class="link" id="reset">Reset all</button></span></div>
+      <div class="ctl">
+        <label for="explode">Explode</label>
+        <div class="inline"><input type="range" id="explode" min="0" max="30" step="0.5" value="0"><span class="val" id="explodeVal">0 mm</span></div>
+
+        <label for="cut">Section</label>
+        <div class="inline">
+          <select id="cut">
+            <option value="none" selected>None</option>
+            <option value="y">Lengthwise</option>
+            <option value="x">Across</option>
+            <option value="z">Plan</option>
+          </select>
+          <button class="btn" id="flip" type="button" title="Keep the other side">Flip</button>
+        </div>
+
+        <label for="cutPos">Cut at</label>
+        <div class="inline"><input type="range" id="cutPos" min="-14" max="14" step="0.05" value="0"><span class="val" id="cutVal">y 0.00</span></div>
+
+        <label>Show</label>
+        <div class="inline" style="flex-wrap: wrap; gap: 4px 14px;">
+          <label class="check"><input type="checkbox" id="edges" checked> Edges</label>
+          <label class="check"><input type="checkbox" id="grid" checked> Grid</label>
+        </div>
+
+        <label>Measure</label>
+        <div class="inline"><button class="btn" id="measure" type="button" aria-pressed="false">Measure distance</button><button class="link" id="clearPts" type="button">Clear</button></div>
+      </div>
+    </div>
+
+    <div class="axes">
+      <b>x</b> from the USB end of the carrier (0) toward the cable<br>
+      <b>y</b> across; +y is the GP0 side, −y the 5V/GND side<br>
+      <b>z</b> up; 0 is the underside of the carrier
+    </div>
+  </aside>
+
+  <main class="stage">
+    <canvas id="view" aria-label="3D view of the assembly"></canvas>
+    <div class="views" role="group" aria-label="Camera views">
+      <button class="btn" data-view="iso">Iso</button>
+      <button class="btn" data-view="top">Top</button>
+      <button class="btn" data-view="bottom">Bottom</button>
+      <button class="btn" data-view="side">Side</button>
+      <button class="btn" data-view="usb">USB end</button>
+      <button class="btn" data-view="cable">Cable end</button>
+    </div>
+    <div class="readout" id="readout" aria-live="polite"><span class="hint">Drag to orbit, right-drag or two fingers to pan, scroll to zoom. Click a part to see its name and the point's coordinates.</span></div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>/*DATA*/</script>
+<script>
+(() => {
+  // ---------- parts ----------
+  const GROUPS = [
+    { name: 'Case', items: [
+      { id: 'lid', label: 'Lid', note: 'LED window, BOOT/RESET pinholes, corner posts', mode: 'ghost', move: 1, meshes: [['lid', '#8fb6dd']] },
+      { id: 'bottom', label: 'Bottom', note: VIEW.variant === 'cable' ? 'Rails, USB tab, cable clamp' : 'Rails, USB tab, header opening', move: -1, meshes: [['bottom', '#e2dccf']] },
+      { id: 'screws', label: 'Clamp screws', note: '2 × M2×8 pan head, from below', move: -1, meshes: [['screws', '#7f868d']] },
+    ]},
+    { name: 'Carrier board', items: [
+      { id: 'fr4', label: 'Board', note: '39 × 23 × 1.6 mm FR4', meshes: [['carrier_fr4', '#1d6b3a']] },
+      { id: 'copper', label: 'Traces', note: '0.4 mm, copper side only', meshes: [['carrier_copper', '#c8743a']] },
+      { id: 'pads', label: 'Pads', note: 'Castellation and through-hole pads', meshes: [['carrier_pads', '#d4a838']] },
+    ]},
+    { name: 'RP2040-Zero', items: [
+      { id: 'mpcb', label: 'Module board', note: '23.5 × 18 × 1.0 mm', meshes: [['mod_pcb', '#1f56b5'], ['mod_pads', '#d4a838']] },
+      { id: 'usb', label: 'USB-C', note: 'Sticks out 1.25 mm past the board', meshes: [['usb', '#c4c7ca']] },
+      { id: 'btn', label: 'BOOT / RESET', note: 'BOOT on −y, RESET on +y', meshes: [['btn_body', '#a9adb2'], ['btn_cap', '#f2f2f0']] },
+      { id: 'led', label: 'RGB LED', note: 'GP16 NeoPixel', meshes: [['led', '#fff6d8']] },
+      { id: 'flash', label: 'Flash chip', meshes: [['flash', '#26282a']] },
+      { id: 'under', label: 'Underside chips', note: 'RP2040, crystal, regulator', meshes: [['mod_under', '#2f3133']] },
+    ]},
+    { name: 'Switch parts, under the carrier', items: [
+      { id: 'r1', label: 'R1 1 kΩ', note: 'GP2 to Q1 base', meshes: [['r1_body', '#d9c09a'], ['r1_leads', '#bfc3c7']] },
+      { id: 'r2', label: 'R2 10 kΩ', note: 'Base to GND pull-down', meshes: [['r2_body', '#d9c09a'], ['r2_leads', '#bfc3c7']] },
+      { id: 'q1', label: 'Q1 2N3904', note: 'TO-92 standing, E-B-C', meshes: [['q1_body', '#232527'], ['q1_leads', '#bfc3c7']] },
+    ]},
+    { name: 'Connector', items: [
+      { id: 'hdr', label: 'J1 header', note: '2-pin 0.1in female, plugs in from below', meshes: [['hdr_body', '#232527'], ['hdr_pins', '#d4a838']] },
+    ]},
+    { name: 'Cable', items: [
+      { id: 'jacket', label: 'Jacket', note: 'AM2464, 3.4 mm', meshes: [['jacket', '#3b3e41']] },
+      { id: 'red', label: '+5V wire', note: 'To J1 pin 1', meshes: [['wire_red', '#d23a2c']] },
+      { id: 'black', label: 'LASER− wire', note: 'To J1 pin 2', meshes: [['wire_black', '#151515']] },
+    ]},
+  ];
+  // keep only the parts this version has
+  GROUPS.forEach(g => { g.items = g.items.filter(it => it.meshes.every(([m]) => MESHES[m])); });
+  for (let i = GROUPS.length - 1; i >= 0; i--) if (!GROUPS[i].items.length) GROUPS.splice(i, 1);
+  const ITEMS = GROUPS.flatMap(g => g.items);
+  document.getElementById('title').textContent = VIEW.title;
+  document.getElementById('sub').textContent = VIEW.sub;
+  document.getElementById('dims').textContent = VIEW.dims;
+  document.getElementById('nav-' + VIEW.variant)?.setAttribute('aria-current', 'page');
+  ITEMS.forEach(it => { it.def = it.mode || 'on'; it.mode = it.def; it.move = it.move || 0; });
+
+  // ---------- decode meshes (quantized, indexed) into flat-ish shaded geometry ----------
+  const b64 = s => { const bin = atob(s); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u.buffer; };
+  const COS = Math.cos(32 * Math.PI / 180);
+  function geometry(m) {
+    const P = new Int16Array(b64(m.p));
+    const I = m.w === 2 ? new Uint16Array(b64(m.i)) : new Uint32Array(b64(m.i));
+    const n = I.length, nt = n / 3, nv = P.length / 3;
+    const fn = new Float32Array(n);
+    for (let t = 0; t < nt; t++) {
+      const a = I[3 * t] * 3, b = I[3 * t + 1] * 3, c = I[3 * t + 2] * 3;
+      const ux = P[b] - P[a], uy = P[b + 1] - P[a + 1], uz = P[b + 2] - P[a + 2];
+      const vx = P[c] - P[a], vy = P[c + 1] - P[a + 1], vz = P[c + 2] - P[a + 2];
+      let x = uy * vz - uz * vy, y = uz * vx - ux * vz, z = ux * vy - uy * vx;
+      const l = Math.hypot(x, y, z) || 1; fn[3 * t] = x / l; fn[3 * t + 1] = y / l; fn[3 * t + 2] = z / l;
+    }
+    const cnt = new Uint32Array(nv + 1);
+    for (let k = 0; k < n; k++) cnt[I[k] + 1]++;
+    for (let v = 0; v < nv; v++) cnt[v + 1] += cnt[v];
+    const adj = new Uint32Array(n), fill = cnt.slice(0, nv);
+    for (let k = 0; k < n; k++) adj[fill[I[k]]++] = (k / 3) | 0;
+    const pos = new Float32Array(n * 3), nor = new Float32Array(n * 3);
+    for (let k = 0; k < n; k++) {
+      const v = I[k], t = (k / 3) | 0;
+      pos[3 * k] = P[3 * v] * MESH_Q; pos[3 * k + 1] = P[3 * v + 1] * MESH_Q; pos[3 * k + 2] = P[3 * v + 2] * MESH_Q;
+      let sx = 0, sy = 0, sz = 0;
+      for (let j = cnt[v]; j < cnt[v + 1]; j++) {
+        const f = adj[j];
+        if (fn[3 * t] * fn[3 * f] + fn[3 * t + 1] * fn[3 * f + 1] + fn[3 * t + 2] * fn[3 * f + 2] > COS) { sx += fn[3 * f]; sy += fn[3 * f + 1]; sz += fn[3 * f + 2]; }
+      }
+      const l = Math.hypot(sx, sy, sz) || 1; nor[3 * k] = sx / l; nor[3 * k + 1] = sy / l; nor[3 * k + 2] = sz / l;
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    g.computeBoundingSphere();
+    return g;
+  }
+
+  // ---------- scene ----------
+  const canvas = document.getElementById('view');
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.localClippingEnabled = false;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(30, 1, 1, 2000);
+  camera.up.set(0, 0, 1);
+  scene.add(camera);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8a8f94, 0.75));
+  const key = new THREE.DirectionalLight(0xffffff, 0.75); key.position.set(-0.4, 0.6, 1); camera.add(key);
+  const fill2 = new THREE.DirectionalLight(0xffffff, 0.25); fill2.position.set(30, -20, 60); scene.add(fill2);
+
+  const TARGET = new THREE.Vector3(25, 0, 0);
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true; controls.dampingFactor = 0.12; controls.target.copy(TARGET);
+  controls.screenSpacePanning = true;
+
+  const clipPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+  const planes = [clipPlane];
+
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  let grid = null;
+  const gridHolder = new THREE.Group(); scene.add(gridHolder);
+  const cutMat = new THREE.MeshBasicMaterial({ side: THREE.BackSide, clippingPlanes: planes });
+
+  const meshList = [];   // for picking
+  ITEMS.forEach(it => {
+    it.group = new THREE.Group(); scene.add(it.group);
+    it.parts = it.meshes.map(([name, color]) => {
+      const g = geometry(MESHES[name]);
+      const mat = new THREE.MeshStandardMaterial({ color, roughness: name === 'usb' || name.includes('leads') || name === 'screws' ? 0.35 : 0.7,
+        metalness: name === 'usb' || name.includes('leads') || name === 'screws' || name.includes('pads') ? 0.45 : 0.0,
+        clippingPlanes: planes, polygonOffset: true, polygonOffsetFactor: 1, polygonOffsetUnits: 1 });
+      const mesh = new THREE.Mesh(g, mat); mesh.userData.item = it;
+      const back = new THREE.Mesh(g, cutMat);
+      const edges = new THREE.LineSegments(new THREE.EdgesGeometry(g, 28),
+        new THREE.LineBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.35, clippingPlanes: planes }));
+      it.group.add(back, mesh, edges); meshList.push(mesh);
+      return { mesh, back, edges, mat, base: new THREE.Color(color) };
+    });
+  });
+
+  function applyTheme() {
+    scene.background = new THREE.Color(css('--stage'));
+    cutMat.color.set(css('--cut'));
+    gridHolder.clear();
+    grid = new THREE.GridHelper(120, 24, new THREE.Color(css('--grid-a')), new THREE.Color(css('--grid-b')));
+    grid.rotation.x = Math.PI / 2; grid.position.set(25, 0, -7.25);
+    gridHolder.add(grid);
+    gridHolder.visible = document.getElementById('grid').checked;
+    const dark = new THREE.Color(css('--stage')).getHSL({}).l < 0.4;
+    ITEMS.forEach(it => it.parts.forEach(p => p.edges.material.color.set(dark ? 0x000000 : 0x1d2226)));
+    needs = true;
+  }
+
+  // ---------- state ----------
+  let explode = 0, cutAxis = 'none', cutFlip = false, cutPos = 0, edgesOn = true, needs = true, hover = null;
+
+  function applyItem(it) {
+    const ghost = it.mode === 'ghost', on = it.mode !== 'off';
+    it.group.visible = on;
+    it.parts.forEach(p => {
+      p.mat.transparent = ghost; p.mat.opacity = ghost ? 0.22 : 1; p.mat.depthWrite = !ghost; p.mat.needsUpdate = true;
+      p.back.visible = !ghost;
+      p.edges.visible = edgesOn; p.edges.material.opacity = ghost ? 0.2 : 0.35;
+      p.mat.emissive.set(hover === it ? 0x332200 : 0x000000);
+    });
+    it.group.position.z = it.move > 0 ? explode : it.move < 0 ? -explode * 0.6 : 0;
+    const row = document.querySelector(`[data-row="${it.id}"]`);
+    if (row) {
+      row.classList.toggle('off', !on);
+      row.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === it.mode)));
+    }
+    needs = true;
+  }
+
+  function applyCut() {
+    const range = { x: [-3, 66], y: [-14, 14], z: [-8, 8] }[cutAxis] || [0, 1];
+    const pos = document.getElementById('cutPos');
+    pos.min = range[0]; pos.max = range[1]; pos.disabled = cutAxis === 'none';
+    if (cutPos < range[0] || cutPos > range[1]) { cutPos = cutAxis === 'x' ? 30 : 0; }
+    pos.value = cutPos;
+    document.getElementById('flip').disabled = cutAxis === 'none';
+    document.getElementById('cutVal').textContent = cutAxis === 'none' ? '—' : `${cutAxis} ${(+cutPos).toFixed(2)}`;
+    renderer.localClippingEnabled = cutAxis !== 'none';
+    const s = cutFlip ? -1 : 1;
+    // keep the side where normal · p + constant >= 0
+    if (cutAxis === 'y') clipPlane.set(new THREE.Vector3(0, s, 0), -s * cutPos);
+    if (cutAxis === 'x') clipPlane.set(new THREE.Vector3(-s, 0, 0), s * cutPos);
+    if (cutAxis === 'z') clipPlane.set(new THREE.Vector3(0, 0, -s), s * cutPos);
+    needs = true;
+  }
+
+  // ---------- panel ----------
+  const groupsEl = document.getElementById('groups');
+  groupsEl.style.display = 'flex'; groupsEl.style.flexDirection = 'column'; groupsEl.style.gap = '18px';
+  GROUPS.forEach((g, gi) => {
+    const box = document.createElement('section'); box.className = 'group';
+    box.innerHTML = `<div class="ghead"><h2>${g.name}</h2><span class="all">
+      <button class="link" type="button" data-all="on">All on</button><button class="link" type="button" data-all="off">All off</button></span></div>`;
+    box.querySelectorAll('[data-all]').forEach(b => b.addEventListener('click', () => { g.items.forEach(it => { it.mode = b.dataset.all; applyItem(it); }); }));
+    g.items.forEach(it => {
+      const row = document.createElement('div'); row.className = 'row'; row.dataset.row = it.id;
+      const sw = it.meshes[0][1];
+      row.innerHTML = `<span class="sw" style="background:${sw}"></span>
+        <span class="name">${it.label}${it.note ? `<small>${it.note}</small>` : ''}</span>
+        <span class="seg" role="group" aria-label="${it.label}">
+          <button type="button" data-mode="on" id="m-${it.id}-on">On</button><button type="button" data-mode="ghost" id="m-${it.id}-ghost">Ghost</button><button type="button" data-mode="off" id="m-${it.id}-off">Off</button>
+        </span>`;
+      row.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => { it.mode = b.dataset.mode; applyItem(it); }));
+      box.appendChild(row);
+    });
+    groupsEl.appendChild(box);
+  });
+
+  const $ = id => document.getElementById(id);
+  $('explode').addEventListener('input', e => { explode = +e.target.value; $('explodeVal').textContent = `${explode} mm`; ITEMS.forEach(applyItem); });
+  $('cut').addEventListener('change', e => { cutAxis = e.target.value; cutPos = cutAxis === 'x' ? 30 : 0; applyCut(); });
+  $('flip').addEventListener('click', () => { cutFlip = !cutFlip; applyCut(); });
+  $('cutPos').addEventListener('input', e => { cutPos = +e.target.value; applyCut(); });
+  $('edges').addEventListener('change', e => { edgesOn = e.target.checked; ITEMS.forEach(applyItem); });
+  $('grid').addEventListener('change', e => { gridHolder.visible = e.target.checked; needs = true; });
+  $('reset').addEventListener('click', () => {
+    ITEMS.forEach(it => it.mode = it.def); explode = 0; $('explode').value = 0; $('explodeVal').textContent = '0 mm';
+    cutAxis = 'none'; cutFlip = false; cutPos = 0; $('cut').value = 'none'; edgesOn = true; $('edges').checked = true;
+    ITEMS.forEach(applyItem); applyCut(); clearPts(); setView('iso');
+  });
+
+  // ---------- camera views ----------
+  const VIEWS = {
+    iso:   [-1.0, -1.55, 1.05], top: [0, -0.001, 1], bottom: [0, 0.001, -1],
+    side:  [0, -1, 0.0001], usb: [-1, 0, 0.0001], cable: [1, 0, 0.0001],
+  };
+  function setView(v) {
+    const d = new THREE.Vector3(...VIEWS[v]).normalize();
+    const dist = 145 * Math.max(1, 1.3 / Math.max(0.3, canvas.clientWidth / Math.max(1, canvas.clientHeight)));
+    controls.target.copy(TARGET);
+    camera.position.copy(TARGET).addScaledVector(d, dist);
+    controls.update(); needs = true;
+  }
+  document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => setView(b.dataset.view)));
+
+  // ---------- picking and measuring ----------
+  const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  const marks = new THREE.Group(); scene.add(marks);
+  let measuring = false, pts = [];
+  const readout = $('readout');
+  const f2 = v => (Math.abs(v) < 0.005 ? 0 : v).toFixed(2);
+
+  function hitAt(ev) {
+    const r = canvas.getBoundingClientRect();
+    ndc.set(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    const vis = meshList.filter(m => m.userData.item.group.visible);
+    const hits = ray.intersectObjects(vis, false).filter(h => cutAxis === 'none' || clipPlane.distanceToPoint(h.point) >= -1e-6);
+    const solid = hits.find(h => h.object.userData.item.mode === 'on');
+    return solid || hits[0] || null;
+  }
+  function modelPoint(h) { const it = h.object.userData.item; return h.point.clone().sub(it.group.position); }
+  function dot(p, col) {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 12), new THREE.MeshBasicMaterial({ color: col, depthTest: false }));
+    m.position.copy(p); m.renderOrder = 10; marks.add(m);
+  }
+  function clearPts() { pts = []; marks.clear(); needs = true; }
+  $('clearPts').addEventListener('click', () => { clearPts(); readout.innerHTML = '<span class="hint">Cleared.</span>'; });
+  $('measure').addEventListener('click', () => {
+    measuring = !measuring; $('measure').setAttribute('aria-pressed', String(measuring));
+    canvas.classList.toggle('picking', measuring); clearPts();
+    readout.innerHTML = measuring ? '<span class="hint">Click the first point.</span>' : '<span class="hint">Measuring off. Click a part to see its name.</span>';
+  });
+
+  function onPick(ev) {
+    const h = hitAt(ev);
+    if (!h) { if (!measuring) { readout.innerHTML = '<span class="hint">Nothing there. Click a part.</span>'; clearPts(); } return; }
+    const it = h.object.userData.item, p = modelPoint(h), accent = css('--accent');
+    if (!measuring) {
+      clearPts(); dot(h.point, accent);
+      readout.innerHTML = `<b>${it.label}</b>${it.note ? ` <span class="hint">· ${it.note}</span>` : ''}<br><span class="xyz">x ${f2(p.x)}  y ${f2(p.y)}  z ${f2(p.z)} mm</span>`;
+      return;
+    }
+    if (pts.length >= 2) clearPts();
+    pts.push({ p, w: h.point.clone(), it }); dot(h.point, accent);
+    if (pts.length === 1) { readout.innerHTML = `<b>${it.label}</b> <span class="xyz">x ${f2(p.x)}  y ${f2(p.y)}  z ${f2(p.z)}</span><br><span class="hint">Click the second point.</span>`; }
+    else {
+      const [a, b] = pts, d = b.p.clone().sub(a.p);
+      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([a.w, b.w]), new THREE.LineBasicMaterial({ color: accent, depthTest: false }));
+      line.renderOrder = 9; marks.add(line);
+      readout.innerHTML = `<b>${d.length().toFixed(2)} mm</b> <span class="hint">${a.it.label} → ${b.it.label}</span><br><span class="xyz">Δx ${f2(d.x)}  Δy ${f2(d.y)}  Δz ${f2(d.z)}</span>`;
+    }
+    needs = true;
+  }
+  let down = null;
+  canvas.addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; });
+  canvas.addEventListener('pointerup', e => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 5 && e.button === 0) onPick(e); down = null; });
+  let hoverQueued = false;
+  canvas.addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse' || e.buttons || hoverQueued) return;
+    hoverQueued = true;
+    requestAnimationFrame(() => {
+      hoverQueued = false;
+      const h = hitAt(e), it = h ? h.object.userData.item : null;
+      if (it !== hover) {
+        const prev = hover; hover = it;
+        if (prev) applyItem(prev); if (it) applyItem(it);
+        document.querySelectorAll('.row.hot').forEach(r => r.classList.remove('hot'));
+        if (it) document.querySelector(`[data-row="${it.id}"]`)?.classList.add('hot');
+        canvas.title = it ? it.label : '';
+      }
+    });
+  });
+  canvas.addEventListener('pointerleave', () => { if (hover) { const p = hover; hover = null; applyItem(p); document.querySelectorAll('.row.hot').forEach(r => r.classList.remove('hot')); } });
+
+  // ---------- render loop ----------
+  function resize() {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix(); needs = true;
+  }
+  new ResizeObserver(resize).observe(canvas);
+  controls.addEventListener('change', () => { needs = true; });
+  (function loop() {
+    requestAnimationFrame(loop);
+    controls.update();
+    if (needs) { needs = false; renderer.render(scene, camera); }
+  })();
+
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+  new MutationObserver(applyTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  resize(); applyTheme(); ITEMS.forEach(applyItem); applyCut(); setView('iso');
+})();
+</script>
+</body>
+</html>

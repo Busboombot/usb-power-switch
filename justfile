@@ -27,6 +27,14 @@ render:
 stl:
     design/cad/stl.sh
 
+# Build the interactive 3D viewer pages, viewer/cable.html and viewer/molex.html
+viewer:
+    design/viewer/build.sh
+
+# Slice the printable STLs for a Bambu A1 into design/cad/gcode/
+slice: stl
+    tools/print/slice.sh
+
 # Open the board's serial console (quit: Ctrl-A, K, Y)
 monitor:
     #!/usr/bin/env bash
