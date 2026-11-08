@@ -10,9 +10,9 @@ the transistor from pin GP2.
 | Ref | Part | Notes |
 |-----|------|-------|
 | U1  | Waveshare RP2040-Zero | Powered and controlled over USB-C |
-| Q1  | 2N2222 or 2N3904 NPN transistor | Good to about 100 mA of laser current; see "Laser current" below |
-| R1  | 1 kΩ resistor | Base resistor, GP2 to Q1 base. Use 470 Ω if the laser draws 50–100 mA |
-| R2  | 10 kΩ resistor | Pull-down, Q1 base to GND. Keeps the laser off during boot and reset |
+| Q1  | 2N3904 or PN2222A NPN transistor, TO-92 | Good to about 100 mA of laser current; see "Laser current" below. The carrier board expects E-B-C pin order |
+| R1  | 1 kΩ, 1/4 W axial resistor | Base resistor, GP2 to Q1 base. Use 470 Ω if the laser draws 50–100 mA |
+| R2  | 10 kΩ, 1/4 W axial resistor | Pull-down, Q1 base to GND. Keeps the laser off during boot and reset |
 | L1  | 5 V line laser module | Must have its own driver board (see below) |
 
 ## Schematic
@@ -54,8 +54,10 @@ U1 GND ──────────────┴─────────�
   - Up to about 50 mA: R1 = 1 kΩ.
   - 50–100 mA: R1 = 470 Ω.
   - More than 100 mA: replace Q1 with a logic-level N-channel MOSFET
-    (for example the AO3400) wired the same way: drain to L1 −, source to
-    GND, gate through about 100 Ω to GP2, and 10 kΩ from gate to GND.
+    wired the same way: drain to L1 −, source to GND, gate through about
+    100 Ω to GP2, and 10 kΩ from gate to GND. Through-hole logic-level
+    MOSFETs come in TO-220 (for example the IRLB8721), which needs a
+    different carrier board and a bigger case.
 - **Laser driver.** Most small line-laser modules have a constant-current
   driver built in and run straight from 5 V. A bare laser diode, with no
   small circuit board on it, must not be connected this way. It needs a
@@ -66,7 +68,11 @@ U1 GND ──────────────┴─────────�
   together with the board's own (about 25 mA). A normal USB port supplies
   500 mA, so this is not a concern for a small laser.
 - **Pinout.** Check the transistor's datasheet for which leg is emitter,
-  base and collector. It varies between packages and manufacturers.
+  base and collector. 2N3904 and PN2222A in TO-92 are E-B-C (flat face
+  toward you, legs down, left to right), which is what the carrier board
+  expects. Some parts sold as "2N2222" in TO-92 are C-B-E.
+- **Board and case.** See [mockup.md](mockup.md) for the single-sided
+  carrier board and the printed case.
 
 ## Firmware interface
 

@@ -19,6 +19,14 @@ deploy:
     sync
     echo "Deployed code/ to {{device}}"
 
+# Render preview images of the board and case into design/cad/renders/
+render:
+    design/cad/render.sh
+
+# Export printable case STLs into design/cad/stl/
+stl:
+    design/cad/stl.sh
+
 # Open the board's serial console (quit: Ctrl-A, K, Y)
 monitor:
     #!/usr/bin/env bash
