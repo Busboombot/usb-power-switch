@@ -19,7 +19,7 @@ case in two versions.
 |---|---|---|
 | Laser connection | Vertical 2-pin 0.1" female header. It hangs under the board and plugs in **from the bottom of the case** | AM2464 cable (2 × 20 AWG, 3.4 mm) soldered into the board |
 | Closing the case | Glue | 2 × M2×8 self-tapping screws, put in from the bottom through the cable clamp |
-| Outside size (L × W × H) | 42.6 × 26.6 × 15.65 mm | 52.1 × 26.6 × 14.65 mm |
+| Outside size (L × W × H) | 42.6 × 30.2 × 15.65 mm | 52.1 × 30.2 × 14.65 mm |
 
 ![Exploded, cable version](cad/renders/exploded_cable.png)
 ![Exploded, Molex version](cad/renders/exploded_molex.png)
@@ -67,7 +67,7 @@ a height map, and the raised parts were measured from those maps.
 
 ![Carrier layout](cad/renders/carrier_drawing.png)
 
-**Single-sided, through-hole.** 39 × 23 mm, 1.6 mm FR4, copper on one
+**Single-sided, through-hole.** 39 × 26.6 mm, 1.6 mm FR4, copper on one
 side only.
 
 - **Which side is which.** The module solders to the copper side, so the
@@ -77,24 +77,54 @@ side only.
 - **Module footprint.** Pads for all 23 castellations, even though only
   5V, GND and GP2 are used; the rest hold the module down. Each pad runs
   0.7 mm under the module edge and 0.8 mm past it for the solder fillet.
-- **Cutout.** Inside the 0.9 mm pad band, the board is cut away so the
+- **Cutout.** Inside the 1.1 mm pad band, the board is cut away so the
   module's underside parts have room. The cutout runs out through the USB
   end of the carrier. The module therefore sits flat on the pads.
 - **Routing on one layer, with no crossings.** 5V and GND both leave the
   module on the same side and run side by side to the back, outside the
   pad row: 5V in the outer lane, GND in the inner one. GP2 runs down the
-  other side. That's why the board is 2.5 mm wider than the module on
-  each side. Traces are 0.4 mm, with at least 0.25 mm clearance.
-- **Through-hole pads** are 2.0 mm across with 1.0 mm holes. They're
-  bigger than usual because the holes on a single-sided board aren't
-  plated.
+  other side. That's why the board is 4.3 mm wider than the module on
+  each side. Traces are 0.8 mm.
+- **Made for milling, with no solder mask.** Along the lanes and the
+  castellation pads, copper of different nets is at least 0.6 mm apart
+  (`iso_gap`). Among the through-hole parts it is at least 1.2 mm apart
+  (`tht_gap`). A 30° × 0.2 mm V-bit cuts about 0.25 mm wide, so every net
+  is isolated by its first pass. All the other copper is milled off, so
+  there's nothing left for solder to bridge to: a 1 mm flat end mill
+  clears the open areas, and the V-bit cuts extra rings in the gaps too
+  narrow for it. The outer lane stays 0.7 mm back from the long edges (`edge_cu`)
+  and 0.4 mm back from the module cutout, which the 2 mm cutter mills.
+  The toolpaths come from `just cam` (`tools/mill/cam.py`).
+- **Milling tabs** (`tabs`, orange in the drawing): four, 2 mm wide and
+  0.5 mm thick, two on each long side at 8 and 31 mm from the USB end.
+  None on the back edge, where the cable version's back stops sit, or on
+  the USB end. Cut them with flush cutters and sand flush: the case leaves
+  only 0.3 mm round the carrier.
+- **Through-hole pads** are 4.0 mm across for R1 and R2 and 3.6 mm for
+  Q1, with 1.0 mm holes. They're big because the holes on a single-sided
+  board aren't plated, so all the strength comes from the copper's grip on
+  the board.
+- **J1 (cable version)** is two 1/8" (3.175 mm) square pads at the back
+  corners, each with a 1.8 mm hole for a wire up to about 0.04" (1 mm)
+  across. Push the wire up through the hole and solder it there, or lap it
+  flat onto the square. +5V is the bottom square (the 5V lane runs into
+  it); LASER− is the top one, joined to Q1's collector by a short trace.
 
 | Ref | Part | Mounting |
 |-----|------|----------|
-| R1 | 1 kΩ, 1/4 W axial | Lying flat, 10.16 mm (0.4") hole spacing |
-| R2 | 10 kΩ, 1/4 W axial | Lying flat, 10.16 mm hole spacing |
-| Q1 | 2N3904 or PN2222A, TO-92 | Standing, legs spread to 2.54 mm, order **E-B-C** |
-| J1 | 2-pin 0.1" vertical female header (Molex version) or the two cable wires | 1.1 mm holes, 2.54 mm apart. Pin 1 = +5V, pin 2 = LASER− |
+| R1 | 1 kΩ, 1/4 W axial | Lying flat, 10.16 mm (0.4") hole spacing, at x = 27.5 |
+| R2 | 10 kΩ, 1/4 W axial | Lying flat, 10.16 mm hole spacing, at x = 30.5 |
+| Q1 | 2N3904 or PN2222A, TO-92 | Standing at the back, legs spread to 5.08 mm (0.2"), order **E-B-C** |
+| J1 | The two cable wires (cable version) | 1.8 mm holes in 1/8" square pads, 18.5 mm apart. Pin 1 = +5V, pin 2 = LASER− |
+
+**Q1's legs** leave the body 1.27 mm apart and must be bent out to 5.08 mm:
+bend the two outer legs out about 3.8 mm just below the body, then down
+through the holes. Leave the body about 1 mm off the board; the case has
+6 mm of room under the carrier.
+
+**Molex version: not redone.** The vertical header still sits where it
+used to, which is now Q1's spot. Only the cable version has the new
+layout.
 
 **Check Q1's pinout.** 2N3904 and PN2222A in TO-92 are E-B-C, reading
 left to right with the flat face toward you and the legs down. Some parts

@@ -35,6 +35,14 @@ viewer:
 slice: stl
     tools/print/slice.sh
 
+# Carvera toolpaths for the carrier board into tools/mill/out/
+cam:
+    uv run -q tools/mill/cam.py
+
+# Place the carrier on a scanned PCB blank: just place GRID.npz SCAN_NAME
+place grid scan: cam
+    uv run -q tools/mill/place.py {{grid}} {{scan}}
+
 # Open the board's serial console (quit: Ctrl-A, K, Y)
 monitor:
     #!/usr/bin/env bash

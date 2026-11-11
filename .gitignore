@@ -5,5 +5,6 @@ design/cad/stl/
 design/scan/out/
 design/viewer/stl/
 design/cad/gcode/
+tools/mill/out/
 result.json
 _site/

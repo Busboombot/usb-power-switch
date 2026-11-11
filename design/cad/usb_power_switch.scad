@@ -67,38 +67,66 @@ function end_y(k)  = (2 - k) * pitch;
 
 // ===================== Carrier board =====================
 pcb_t = 1.6;
-car_margin = 2.5;              // carrier beyond module on each side (room for two traces)
-car_w = mod_w + 2 * car_margin;
-car_l = 39;
-pad_band = 0.9;                // safe band under the module edge
-pad_in = 0.7;                  // pad copper under module (0.2 back from cutout)
+pad_band = 1.1;                // ledge under the module edge; the cutout starts inside it
+pad_in = 0.7;                  // pad copper under module (0.4 back from the milled cutout edge)
 pad_out = 0.8;                 // pad copper past module edge (solder fillet)
 pad_w = 1.5;
 solder_gap = 0.1;
 mod_z = pcb_t + solder_gap;    // module underside height
 
-// Single-layer routing: two lanes outside the castellation pads
-trace_w = 0.4;
-lane_in = mod_w / 2 + pad_out + 0.45;   // 10.25
-lane_out = lane_in + 0.7;               // 10.95
+// Single-layer routing: two lanes outside the castellation pads.
+// The board is milled: a 30 deg x 0.2 V-bit cuts about 0.25 wide, so copper
+// of different nets must be at least iso_gap apart to come out isolated.
+// 0.6 leaves room for a worn bit or a second pass.
+trace_w = 0.8;                 // lanes and part traces; the module stubs fit between pads at this width
+iso_gap = 0.6;                 // copper to copper between nets
+lane_in = mod_w / 2 + pad_out + iso_gap + trace_w / 2;   // 10.8
+lane_out = lane_in + trace_w + iso_gap;                  // 12.2
+
+car_margin = 4.3;              // carrier beyond module on each side
+car_w = mod_w + 2 * car_margin;                             // 26.6
+edge_cu = car_w / 2 - lane_out - trace_w / 2;             // 0.7: outer lane's copper back from the long edge
+assert(edge_cu >= 0.5, "lanes too close to the board edge");
+car_l = 39;
+
+// Milling tabs: the 2 mm outline cutter rises over these so the board stays in
+// the blank until they are cut. [x along the board, side: -1 = 5V/GND side, +1 = GP side].
+// None on the back edge (the cable version's back stops sit 0.2 behind it)
+// or the USB end (front wall). Cut with flush cutters and sand flush: the case
+// leaves 0.3 mm round the carrier.
+tab_w = 2.0;                   // along the edge
+tab_t = 0.5;                   // left standing above the board's underside
+tabs = [[8, -1], [31, -1], [8, 1], [31, 1]];
 
 // Through-hole parts. Holes are [x, y].
+// The board has no solder mask, so the through-hole pads are big and far
+// apart: different nets are at least tht_gap apart here (2 x iso_gap).
 tht_drill = 1.0;
-tht_pad = 2.0;                 // big pads: holes are unplated on a single-sided board
+tht_gap = 1.2;                 // copper to copper between nets, through-hole area
+tht_pad = 4.0;                 // big pads: holes are unplated on a single-sided board
 res_pitch = 10.16;             // 1/4 W axial resistor lying flat
-r1_holes = [[26.5,  6.5], [26.5,  6.5 - res_pitch]];  // 1k:  GP2 -> base
-r2_holes = [[29.5, -6.5 + res_pitch], [29.5, -6.5]];  // 10k: base -> GND
-q1_x = 33.5;                   // TO-92 standing, legs at 2.54 pitch (E B C)
-q1_e = [q1_x, -pitch];
-q1_b = [q1_x, 0];
-q1_c = [q1_x, pitch];
-q1_pad = 1.8;
+r1_holes = [[27.5,  8.0], [27.5,  8.0 - res_pitch]];      // 1k:  GP2 -> base
+r2_holes = [[30.5,  2.0], [30.5,  2.0 - res_pitch]];      // 10k: base -> GND
+q1_x = 35.5;                   // TO-92 standing, legs spread to 2 x 2.54 (E B C)
+q1_y = 0.4;
+q1_pitch = 2 * pitch;
+q1_e = [q1_x, q1_y - q1_pitch];
+q1_b = [q1_x, q1_y];
+q1_c = [q1_x, q1_y + q1_pitch];
+q1_pad = 3.6;
 
-// J1: two holes, 0.1in pitch. Header pins or 20 AWG pigtail wires.
-j1_x = 36.5;
-j1_y = [-pitch / 2, pitch / 2];  // pin 1 = +5V, pin 2 = LASER-
-j1_drill = 1.1;
-j1_pad = 2.0;
+// J1. Cable version: two 1/8in square pads at the back corners, each with a
+// 1.8 mm hole the 20 AWG wire goes up through (milled, T5). The square is big
+// enough to lap-solder a wire on top instead. +5V sits tht_gap below Q1's
+// emitter pad; LASER- is on the collector's side, joined to it by a short trace.
+// Molex version: two pins 0.1in apart. (It still uses the old spot, which now
+// collides with Q1: the Molex layout has not been redone.)
+j1_x = variant == "molex" ? 36.5 : q1_x;
+j1_sq = 25.4 / 8;              // 3.175
+j1_off = q1_pitch - q1_y + q1_pad / 2 + tht_gap + j1_sq / 2;   // 9.27
+j1_y = variant == "molex" ? [-pitch / 2, pitch / 2] : [-j1_off, j1_off];  // pin 1 = +5V, pin 2 = LASER-
+j1_drill = variant == "molex" ? 1.1 : 1.8;
+j1_pad = 1.9;                  // Molex version: round pads, 0.64 apart at 0.1in pitch
 
 // Female header (stand-in for the Molex part), mounted under the board
 hdr_body = [2.54, 5.08, 8.5];
@@ -117,12 +145,11 @@ traces = [
   [trace_w, [[side_x(0), -9.3], [side_x(0), -lane_out], [j1_x, -lane_out], [j1_x, j1_y[0]]]],
   // GND: inner lane on the -y side -> R2 -> Q1 emitter
   [trace_w, [[side_x(1), -9.3], [side_x(1), -lane_in], [r2_holes[1][0], -lane_in],
-             r2_holes[1], [q1_x, r2_holes[1][1]], q1_e]],
+             r2_holes[1], [32.6, -5.4], q1_e]],    // bent to stay tht_gap clear of the +5V square
   // GP2: lane on the +y side -> R1
   [trace_w, [[side_x(2), 9.3], [side_x(2), lane_in], [r1_holes[0][0], lane_in], r1_holes[0]]],
-  // R1 -> base, R2 -> base
-  [trace_w, [r1_holes[1], q1_b]],
-  [trace_w, [r2_holes[0], q1_b]],
+  // base: R1 -> R2 -> Q1 base
+  [trace_w, [r1_holes[1], r2_holes[0], q1_b]],
   // collector -> J1 pin 2 (LASER-)
   [trace_w, [q1_c, [j1_x, j1_y[1]]]],
 ];
@@ -280,7 +307,10 @@ module castle_pads_2d() {
 module tht_pads_2d() {
   for (h = concat(r1_holes, r2_holes)) translate(h) difference() { circle(d = tht_pad); circle(d = tht_drill); }
   for (h = [q1_e, q1_b, q1_c]) translate(h) difference() { circle(d = q1_pad); circle(d = tht_drill); }
-  for (y = j1_y) translate([j1_x, y]) difference() { circle(d = j1_pad); circle(d = j1_drill); }
+  for (y = j1_y) translate([j1_x, y]) difference() {
+    if (variant == "molex") circle(d = j1_pad); else square(j1_sq, center = true);
+    circle(d = j1_drill);
+  }
 }
 
 module copper_2d() {
@@ -309,9 +339,11 @@ module resistor(holes, band) {
 module to92() {
   z1 = -q1_standoff;
   z0 = z1 - q1_body[2];
-  for (h = [q1_e, q1_b, q1_c]) lead(h, z1 - 0.2);
+  // legs leave the body at 1.27 pitch and are bent out to the pads
+  for (k = [-1 : 1]) color(c_silver) chain3([[q1_x, q1_y + k * 1.27, z1 - 0.2], [q1_x, q1_y + k * 1.27, z1 + 0.2],
+                                             [q1_x, q1_y + k * q1_pitch, -0.2], [q1_x, q1_y + k * q1_pitch, pcb_t + 0.8]], 0.6);
   // D-shaped body, flat face toward +x
-  color(c_black) translate([q1_x, 0, z0]) intersection() {
+  color(c_black) translate([q1_x, q1_y, z0]) intersection() {
     cylinder(d = q1_body[0], h = q1_body[2]);
     translate([-q1_body[0], -q1_body[0], 0]) cube([q1_body[0] + q1_body[1] - q1_body[0] / 2, 2 * q1_body[0], q1_body[2]]);
   }
@@ -337,7 +369,7 @@ module carrier_drawing() {
   // outlines of the parts underneath
   color("#dddddd") translate([0, 0, 0.3]) linear_extrude(0.02) {
     for (r = [r1_holes, r2_holes]) translate((r[0] + r[1]) / 2) outline_2d([res_body[1], res_body[0]]);
-    translate([q1_x - q1_body[0] / 2 + q1_body[1] / 2, 0]) outline_2d([q1_body[1], q1_body[0]]);
+    translate([q1_x - q1_body[0] / 2 + q1_body[1] / 2, q1_y]) outline_2d([q1_body[1], q1_body[0]]);
   }
   // module outline
   color("#1f56b5") translate([0, 0, 0.4]) linear_extrude(0.02) difference() {
@@ -355,18 +387,21 @@ module carrier_drawing() {
     translate([mod_l / 2 - 1, 0]) text("cutout", size = 1.2, halign = "center", valign = "center");
     translate([mod_l / 2 - 1, -2]) text("(module underside parts)", size = 0.7, halign = "center", valign = "center");
     translate([-0.5, 0]) rotate(90) text("USB end", size = 1.0, halign = "center", valign = "bottom");
-    translate([j1_x + 1.4, j1_y[0]]) text("+5V", size = 0.7, valign = "center");
-    translate([j1_x + 1.4, j1_y[1]]) text("LASER-", size = 0.7, valign = "center");
-    translate([j1_x, 3.0]) text("J1", size = 0.8, halign = "center");
-    translate([q1_x + 1.3, q1_e[1]]) text("E", size = 0.6, valign = "center");
-    translate([q1_x + 1.3, q1_b[1]]) text("B", size = 0.6, valign = "center");
-    translate([q1_x + 1.3, q1_c[1]]) text("C", size = 0.6, valign = "center");
-    translate([q1_x, -4.6]) text("Q1", size = 0.8, halign = "center");
-    translate([r1_holes[0][0] - 1.4, 1.4]) rotate(90) text("R1 1k", size = 0.6, halign = "center");
-    translate([r2_holes[0][0] + 1.4, -1.4]) rotate(90) text("R2 10k", size = 0.6, halign = "center", valign = "top");
+    translate([j1_x + 2.0, j1_y[0]]) text("+5V", size = 0.7, valign = "center");
+    translate([j1_x + 2.0, j1_y[1]]) text("LASER-", size = 0.7, valign = "center");
+    translate([j1_x - 2.0, j1_y[1]]) text("J1", size = 0.8, halign = "right", valign = "center");
+    translate([q1_x + 2.1, q1_e[1]]) text("E", size = 0.6, valign = "center");
+    translate([q1_x + 2.1, q1_b[1]]) text("B", size = 0.6, valign = "center");
+    translate([q1_x + 2.1, q1_c[1]]) text("C", size = 0.6, valign = "center");
+    translate([q1_x + 2.1, (q1_b[1] + q1_e[1]) / 2]) text("Q1", size = 0.8, valign = "center");
+    translate([r1_holes[0][0] - 2.4, (r1_holes[0][1] + r1_holes[1][1]) / 2]) rotate(90) text("R1 1k", size = 0.6, halign = "center");
+    translate([r2_holes[0][0] + 2.4, (r2_holes[0][1] + r2_holes[1][1]) / 2]) rotate(90) text("R2 10k", size = 0.6, halign = "center", valign = "top");
   }
+  // milling tabs, drawn on the copper-free strip along the edge
+  color("#ff7f11") translate([0, 0, 0.3]) linear_extrude(0.02)
+    for (t = tabs) translate([t[0] - tab_w / 2, t[1] > 0 ? car_w / 2 - 0.8 : -car_w / 2]) square([tab_w, 0.8]);
   color("black") translate([0, 0, 0.5]) linear_extrude(0.02) {
-    translate([0, -car_w / 2 - 5.5]) text("Copper side (one layer). Gray outlines: parts mounted on the other side.", size = 0.8);
+    translate([0, -car_w / 2 - 5.5]) text("Copper side (one layer). Gray outlines: parts mounted on the other side. Orange: milling tabs.", size = 0.8);
     translate([0, -car_w / 2 - 7.0]) text(str("carrier ", car_l, " x ", car_w, " mm, 1.6 mm FR4; module footprint ", mod_l, " x ", mod_w), size = 0.8);
   }
 }
@@ -481,9 +516,11 @@ module cable_mock() {
   jacket_x0 = in_x1 - 0.8;
   color("#3a3a3a") translate([jacket_x0, 0, z_split]) rotate([0, 90, 0]) cylinder(d = cable_d, h = out_x1 - jacket_x0 + 15);
   for (i = [0, 1]) color(i == 0 ? "red" : "#111111")
-    chain3([[jacket_x0 + 0.2, j1_y[i] * 0.5, z_split],
-            [j1_x + 2.0, j1_y[i], z_split],
-            [j1_x, j1_y[i], -1.2],
+    chain3([[jacket_x0 + 0.2, (i == 0 ? -1 : 1) * 0.85, z_split],
+            [car_l + 0.5, (i == 0 ? -1 : 1) * 4.5, z_split],
+            [car_l - 2.0, (i == 0 ? -1 : 1) * 5.2, z_split],
+            [j1_x + 0.8, j1_y[i], -1.2],
+            [j1_x, j1_y[i], -0.4],
             [j1_x, j1_y[i], pcb_t + 0.6]], 1.0);
 }
 
@@ -512,7 +549,7 @@ module carrier_mock() {
     translate([mid[0] - 0.6, mid[1] - res_body[0] / 2, zc]) cube([1.2, res_body[0], -zc + eps]);
   }
   // TO-92, solid down to the board (stands in for body + legs)
-  translate([q1_x, 0, -q1_standoff - q1_body[2]]) intersection() {
+  translate([q1_x, q1_y, -q1_standoff - q1_body[2]]) intersection() {
     cylinder(d = q1_body[0], h = q1_body[2] + q1_standoff + eps);
     translate([-q1_body[0], -q1_body[0], 0])
       cube([q1_body[0] + q1_body[1] - q1_body[0] / 2, 2 * q1_body[0], q1_body[2] + q1_standoff + eps]);
